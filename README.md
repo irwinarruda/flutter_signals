@@ -1,6 +1,6 @@
 # Flutter Signals
 
-For now, this project is a proof of concept to test if the Solid's Signals implementation works on flutter. Here is an example of how it would be used:
+For now, this project is a proof of concept to test if [Solid's Signals](https://www.solidjs.com/docs/latest/api#createsignal) implementation works on flutter. Here is an example of how it would be used:
 
 ```dart
 class MyHomePage extends StatelessWidget {
