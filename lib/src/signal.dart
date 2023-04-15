@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 typedef SignalSubscriber = void Function();
 
-typedef ComputedSubscriber<T> = T Function();
-
 class SignalContext {
   static List<SignalSubscriber> context = [];
 }
@@ -22,7 +20,6 @@ class SignalEffect {
 
 class SignalBuilder<T> {
   SignalBuilder(T initialValue) {
-    print('called signal');
     this.value = initialValue;
   }
   late Set<SignalSubscriber> subscribers = {};
@@ -48,16 +45,21 @@ class SignalBuilder<T> {
   }
 }
 
+class ComputedBuilder<T> {
+  ComputedBuilder(this.callback);
+  T Function() callback;
+
+  T call() {
+    return this.callback();
+  }
+}
+
 SignalBuilder<T> signal<T>(T initialValue) {
   return SignalBuilder(initialValue);
 }
 
-ComputedSubscriber<T> computed<T>(ComputedSubscriber<T> cb) {
-  return cb;
-}
-
-void createEffect(void Function() cb) {
-  SignalEffect.createEffect(cb);
+ComputedBuilder<T> computed<T>(T Function() cb) {
+  return ComputedBuilder(cb);
 }
 
 class Observer extends StatelessWidget {
@@ -76,8 +78,8 @@ class ObserverElement extends StatelessElement {
 
   Widget? built;
 
-  void startEffect() {
-    createEffect(() {
+  void startReaction() {
+    SignalEffect.createEffect(() {
       built = super.build();
       invalidate();
     });
@@ -90,7 +92,7 @@ class ObserverElement extends StatelessElement {
   @override
   Widget build() {
     if (built == null) {
-      startEffect();
+      startReaction();
     }
     return built!;
   }

@@ -1,5 +1,3 @@
-// ignore_for_file: must_be_immutable
-
 import 'package:flutter/material.dart';
 import 'package:flutter_signals/flutter_signals.dart';
 
@@ -17,16 +15,18 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatelessWidget {
-  MyHomePage({super.key});
+  const MyHomePage({super.key});
 
-  late var count = signal<int>(0);
-  late var doubleCount = computed<int>(() => count() * 2);
+  static var count = signal<int>(0);
+  static var doubleCount = computed<int>(() => count() * 2);
+
+  static var text = signal<String>("");
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +35,19 @@ class MyHomePage extends StatelessWidget {
         title: const Text('Test App 1'),
       ),
       body: Center(
-        child: Observer(
-          builder: (cx) => Text(
-            'Count: ${count()} | Double ${doubleCount()}',
-            style: Theme.of(cx).textTheme.headlineMedium,
-          ),
+        child: Column(
+          children: [
+            TextField(onChanged: (v) => text.set(v)),
+            Observer(
+              builder: (cx) => Text('Texto: ${text()}'),
+            ),
+            Observer(
+              builder: (cx) => Text(
+                'Count: ${count()} | Double ${doubleCount()}',
+                style: Theme.of(cx).textTheme.headlineMedium,
+              ),
+            )
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
