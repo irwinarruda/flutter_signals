@@ -2,19 +2,57 @@ import 'package:flutter/material.dart';
 
 typedef SignalSubscriber = void Function();
 
+class ContextType {
+  ContextType();
+  void Function()? execute;
+  void Function()? dispose;
+  call() {
+    if (execute == null) return;
+    return execute!();
+  }
+
+  setDispose(void Function()? dispose) {
+    this.dispose = dispose;
+  }
+
+  setExecute(void Function() execute) {
+    this.execute = execute;
+  }
+}
+
 class SignalContext {
-  static List<SignalSubscriber> context = [];
+  static List<ContextType> context = [];
+  static int get count => context.length;
+  static int push(ContextType item) {
+    SignalContext.context.add(item);
+    return SignalContext.count;
+  }
+
+  static ContextType pop() {
+    return SignalContext.context.removeLast();
+  }
+
+  static ContextType peek() {
+    return SignalContext.context.last;
+  }
 }
 
 class SignalEffect {
-  static void createEffect(SignalSubscriber callback) {
+  static void Function() createEffect(SignalSubscriber callback) {
+    final context = ContextType();
     void execute() {
-      SignalContext.context.add(execute);
+      context.setExecute(execute);
+      SignalContext.push(context);
       callback();
-      SignalContext.context.removeLast();
+      SignalContext.pop();
     }
 
     execute();
+    return () {
+      if (context.dispose != null) {
+        context.dispose!();
+      }
+    };
   }
 }
 
@@ -22,26 +60,30 @@ class SignalBuilder<T> {
   SignalBuilder(T initialValue) {
     this.value = initialValue;
   }
-  late Set<SignalSubscriber> subscribers = {};
+  late Set<ContextType> subscribers = {};
   late T value;
 
   T call() {
-    if (SignalContext.context.isNotEmpty) {
-      this.subscribers.add(SignalContext.context.last);
+    if (SignalContext.count > 0) {
+      final lastCtx = SignalContext.peek();
+      lastCtx.setDispose(() {
+        subscribers.remove(lastCtx);
+      });
+      subscribers.add(lastCtx);
     }
     return value;
   }
 
   bool set(T newValue) {
     this.value = newValue;
-    for (var subscriber in this.subscribers) {
+    for (var subscriber in subscribers) {
       subscriber();
     }
     return true;
   }
 
   bool update(T Function(T) cb) {
-    return set(cb(this.value));
+    return set(cb(value));
   }
 }
 
@@ -73,27 +115,40 @@ class Observer extends StatelessWidget {
   StatelessElement createElement() => ObserverElement(this);
 }
 
+abstract class ObserverWidget extends StatelessWidget {
+  const ObserverWidget({super.key});
+  @override
+  ObserverElement createElement() => ObserverElement(this);
+}
+
 class ObserverElement extends StatelessElement {
   ObserverElement(super.widget);
 
-  Widget? built;
+  void Function()? dispose;
+  Widget? element;
 
-  void startReaction() {
-    SignalEffect.createEffect(() {
-      built = super.build();
-      invalidate();
-    });
-  }
-
-  void invalidate() {
-    markNeedsBuild();
+  @override
+  void unmount() {
+    if (dispose != null) {
+      dispose!();
+      dispose = null;
+    }
+    super.unmount();
   }
 
   @override
   Widget build() {
-    if (built == null) {
-      startReaction();
+    if (dispose == null) {
+      dispose = SignalEffect.createEffect(() {
+        if (dispose != null) {
+          markNeedsBuild();
+          return;
+        }
+        element = super.build();
+      });
+    } else {
+      element = super.build();
     }
-    return built!;
+    return element!;
   }
 }

@@ -26,8 +26,6 @@ class MyHomePage extends StatelessWidget {
   static var count = signal<int>(0);
   static var doubleCount = computed<int>(() => count() * 2);
 
-  static var text = signal<String>("");
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,16 +35,13 @@ class MyHomePage extends StatelessWidget {
       body: Center(
         child: Column(
           children: [
-            TextField(onChanged: (v) => text.set(v)),
-            Observer(
-              builder: (cx) => Text('Texto: ${text()}'),
-            ),
             Observer(
               builder: (cx) => Text(
                 'Count: ${count()} | Double ${doubleCount()}',
                 style: Theme.of(cx).textTheme.headlineMedium,
               ),
-            )
+            ),
+            const MyButton(),
           ],
         ),
       ),
@@ -55,6 +50,42 @@ class MyHomePage extends StatelessWidget {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),
+    );
+  }
+}
+
+class MyButton extends ObserverWidget {
+  const MyButton({super.key});
+
+  static var count = signal<int>(0);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text('Count: ${count()}'),
+        FilledButton(
+          child: const Text('Increment'),
+          onPressed: () => count.set(count() + 1),
+        ),
+        const MyInput(),
+      ],
+    );
+  }
+}
+
+class MyInput extends ObserverWidget {
+  const MyInput({super.key});
+
+  static var text = signal<String>('');
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TextField(onChanged: (v) => text.set(v)),
+        Text(text()),
+      ],
     );
   }
 }

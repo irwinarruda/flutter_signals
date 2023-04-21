@@ -1,13 +1,17 @@
 # Flutter Signals
 
-For now, this project is a proof of concept to test if [Solid's Signals](https://www.solidjs.com/docs/latest/api#createsignal) implementation works on flutter. Here is an example of how it would be used:
+For now, this project is a proof of concept to test if [Solid's Signals](https://www.solidjs.com/docs/latest/api#createsignal) implementation works on flutter. It can be used in two ways:
+
+## Observer Builder
+
+The `Observer Builder` will track any signals inside it. When they change, only the ObserverWidget will rerender. Use this if you need fine-grained reactivity in a `Widget`.
 
 ```dart
 class MyHomePage extends StatelessWidget {
-  MyHomePage({super.key});
+  const MyHomePage({super.key});
 
-  late var count = signal<int>(0);
-  late var doubleCount = computed<int>(() => count() * 2);
+  static var count = signal<int>(0);
+  static var doubleCount = computed<int>(() => count() * 2);
 
   @override
   Widget build(BuildContext context) {
@@ -16,11 +20,15 @@ class MyHomePage extends StatelessWidget {
         title: const Text('Test App 1'),
       ),
       body: Center(
-        child: Observer(
-          builder: (cx) => Text(
-            'Count: ${count()} | Double ${doubleCount()}',
-            style: Theme.of(cx).textTheme.headlineMedium,
-          ),
+        child: Column(
+          children: [
+            Observer(
+              builder: (cx) => Text(
+                'Count: ${count()} | Double ${doubleCount()}',
+                style: Theme.of(cx).textTheme.headlineMedium,
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -33,6 +41,28 @@ class MyHomePage extends StatelessWidget {
 }
 ```
 
-For now, the main problem with this implementation is that `Hot Reloading` calls the `signal` function again breaking the state.
+## ObserverWidget
+
+The `ObserverWidget` extends `StatelessWidget` and can be used like it. The difference between both is that ObserverWidget rerenders if a signal changes.
+
+```dart
+class MyInput extends ObserverWidget {
+  const MyInput({super.key});
+
+  static var text = signal<String>('');
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TextField(onChanged: (v) => text.set(v)),
+        Text(text()),
+      ],
+    );
+  }
+}
+```
+
+For now, the main problem with this implementation is that `Hot Reloading` calls the `signal` function again breaking the state if we don't use static variables.
 
 For more code, go to `/example` folder.
